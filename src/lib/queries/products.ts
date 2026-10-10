@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ColorItem = {
   name: string;
@@ -36,8 +37,30 @@ async function formatProduct(supabase: any, product: any): Promise<Product> {
       ?.sort((a: any, b: any) => a.sort_order - b.sort_order)
       .map((img: any) => img.image_url) || [];
 
+  let colors: ColorItem[] = [];
+  if (Array.isArray(product.colors)) {
+    colors = product.colors
+      .map((c: any) => {
+        if (typeof c === "string") {
+          return { name: c, hex: "#888888" };
+        }
+        if (
+          c &&
+          typeof c === "object" &&
+          typeof c.name === "string" &&
+          typeof c.hex === "string"
+        ) {
+          return { name: c.name, hex: c.hex };
+        }
+        return null;
+      })
+      .filter((c): c is ColorItem => c !== null);
+  }
+
   return {
     ...product,
+    colors,
+    sizes: Array.isArray(product.sizes) ? product.sizes : [],
     category_slug: product.categories?.slug,
     category_name: product.categories?.name,
     image: images[0] || "/placeholder.jpg",
@@ -45,7 +68,31 @@ async function formatProduct(supabase: any, product: any): Promise<Product> {
   };
 }
 
-// ⭐ All products — newest first
+// ⭐ STATIC version — for build time (generateStaticParams)
+export async function getProductsStatic(): Promise<Product[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      `
+      *,
+      categories (slug, name),
+      product_images (image_url, sort_order)
+    `
+    )
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching products (static):", error);
+    return [];
+  }
+
+  return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
+}
+
+// ⭐ RUNTIME version — for server components
 export async function getProducts(limit?: number): Promise<Product[]> {
   const supabase = await createClient();
 
@@ -75,7 +122,6 @@ export async function getProducts(limit?: number): Promise<Product[]> {
   return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
 }
 
-// ⭐ Products by category — newest first
 export async function getProductsByCategory(
   categorySlug: string,
   limit?: number
@@ -142,7 +188,6 @@ export async function getProductById(id: string): Promise<Product | null> {
   return formatProduct(supabase, data);
 }
 
-// ⭐ Sale products — newest first
 export async function getSaleProducts(): Promise<Product[]> {
   const supabase = await createClient();
 

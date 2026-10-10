@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type Category = {
   id: string;
@@ -10,6 +11,25 @@ export type Category = {
   is_active: boolean;
 };
 
+// ⭐ For build time (generateStaticParams) — uses admin client
+export async function getCategoriesStatic(): Promise<Category[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching categories (static):", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// ⭐ For runtime (server components) — uses server client
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
 

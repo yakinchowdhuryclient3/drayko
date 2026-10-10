@@ -7,14 +7,15 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import {
   getProductById,
-  getProducts,
   getProductsByCategory,
+  getProductsStatic,
 } from "@/lib/queries/products";
 
 export const revalidate = 300;
 
 export async function generateStaticParams() {
-  const products = await getProducts();
+  // Use admin client for build-time data fetch
+  const products = await getProductsStatic();
   return products.map((product) => ({
     id: product.id,
   }));
@@ -50,11 +51,10 @@ export default async function ProductPage({ params }: Props) {
       <TopBar />
       <Navbar />
 
-      {/* Breadcrumb */}
       <div className="border-b border-gray-200 bg-gray-50">
         <div className="container-custom py-3">
           <nav className="flex items-center gap-2 text-[11px] md:text-xs uppercase tracking-wide text-gray-500">
-            <Link href="/" className="hover:text-black transition">
+            <Link href="/" prefetch={true} className="hover:text-black transition">
               Home
             </Link>
             <span>/</span>
@@ -62,6 +62,7 @@ export default async function ProductPage({ params }: Props) {
               <>
                 <Link
                   href={`/category/${product.category_slug}`}
+                  prefetch={true}
                   className="hover:text-black transition"
                 >
                   {product.category_name}
@@ -76,7 +77,6 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container-custom py-6 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
           <div>
@@ -107,7 +107,6 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Related Products */}
       {related.length > 0 && (
         <section className="py-10 md:py-14 border-t border-gray-200">
           <div className="container-custom">
