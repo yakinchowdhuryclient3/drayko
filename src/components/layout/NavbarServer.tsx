@@ -1,6 +1,5 @@
 import NavbarClient from "./NavbarClient";
 
-// Static menu items — no DB query on every request
 const STATIC_MENU_ITEMS = [
   { id: "1", label: "SALE", href: "/sale", color: "red", sort_order: 1, is_active: true },
   { id: "2", label: "WINTER COLLECTION", href: "/winter-collection", color: "default", sort_order: 2, is_active: true },
@@ -17,6 +16,5 @@ const STATIC_MENU_ITEMS = [
 ];
 
 export default function NavbarServer() {
-  // Static items — no DB query
   return <NavbarClient items={STATIC_MENU_ITEMS} />;
 }
