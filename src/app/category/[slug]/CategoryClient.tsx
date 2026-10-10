@@ -3,32 +3,9 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import ProductCard from "@/components/ui/ProductCard";
+import type { Product } from "@/lib/queries/products";
 
 type SortOption = "relevance" | "price-low" | "price-high" | "newest";
-
-type Product = {
-  id: string;
-  name: string;
-  slug: string | null;
-  description: string | null;
-  category_id: string | null;
-  price: number;
-  old_price: number | null;
-  stock: number;
-  sizes: string[];
-  colors: string[];
-  rating: number;
-  reviews_count: number;
-  is_sale: boolean;
-  is_new: boolean;
-  is_active: boolean;
-  sort_order: number;
-  created_at: string;
-  category_slug?: string;
-  category_name?: string;
-  image?: string;
-  images?: string[];
-};
 
 type Props = {
   products: Product[];

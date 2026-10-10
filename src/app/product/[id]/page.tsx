@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: Props) {
             <ProductGallery images={images} name={product.name} />
           </div>
           <div>
-            <ProductInfo
+                        <ProductInfo
               product={{
                 id: product.id,
                 name: product.name,
@@ -90,8 +90,9 @@ export default async function ProductPage({ params }: Props) {
                 isNew: product.is_new,
                 rating: product.rating,
                 reviews: product.reviews_count,
-                sizeGuideUrl: (product as any).size_guide_url || null,
+                sizeGuideUrl: product.size_guide_url || null,
               }}
+          
             />
           </div>
         </div>

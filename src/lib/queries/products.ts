@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type ColorItem = {
+  name: string;
+  hex: string;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -10,7 +15,7 @@ export type Product = {
   old_price: number | null;
   stock: number;
   sizes: string[];
-  colors: string[];
+  colors: ColorItem[];
   rating: number;
   reviews_count: number;
   is_sale: boolean;

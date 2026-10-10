@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 
-type Product = {
+type ColorItem = {
+  name: string;
+  hex: string;
+};
+
+type ProductInput = {
   id: string;
   name: string;
   price: number;
@@ -11,6 +16,7 @@ type Product = {
   oldPrice?: number | null;
   image?: string;
   images?: string[];
+  colors?: ColorItem[] | string[];
   is_sale?: boolean;
   isSale?: boolean;
   is_new?: boolean;
@@ -18,17 +24,21 @@ type Product = {
 };
 
 type Props = {
-  product: Product;
+  product: ProductInput;
 };
 
 export default function ProductCard({ product }: Props) {
   const [imgError, setImgError] = useState(false);
 
-  // Handle both DB and static data field names
   const oldPrice = product.old_price ?? product.oldPrice;
   const isSale = product.is_sale ?? product.isSale;
   const isNew = product.is_new ?? product.isNew;
-  const image = product.image || product.images?.[0] || "/placeholder.jpg";
+
+  // images could be string[] (queries) or from older sources
+  const image =
+    product.image ||
+    (Array.isArray(product.images) ? product.images[0] : null) ||
+    "/placeholder.jpg";
 
   return (
     <Link href={`/product/${product.id}`} className="group flex flex-col">
