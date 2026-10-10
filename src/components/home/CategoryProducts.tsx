@@ -13,6 +13,7 @@ export default async function CategoryProducts({
   slug,
   limit = 4,
 }: Props) {
+  // Single query with limit
   const products = await getProductsByCategory(slug, limit);
 
   if (products.length === 0) return null;
@@ -20,7 +21,6 @@ export default async function CategoryProducts({
   return (
     <section className="py-8 md:py-12 bg-white border-b border-gray-100">
       <div className="container-custom">
-        {/* Section Header */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
             <h2 className="text-lg md:text-2xl font-bold uppercase tracking-wide">
@@ -37,7 +37,6 @@ export default async function CategoryProducts({
           </Link>
         </div>
 
-        {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
