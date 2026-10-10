@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
@@ -19,7 +18,6 @@ type Props = {
   items: MenuItem[];
 };
 
-// ============ COLOR CLASS HELPER ============
 const getColorClass = (color: string) => {
   const map: Record<string, string> = {
     default: "hover:text-gray-500",
@@ -58,12 +56,46 @@ export default function NavbarClient({ items }: Props) {
   const { totalItems } = useCart();
   const router = useRouter();
 
+  // ============ BODY SCROLL LOCK ============
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      // Lock body scroll
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const scrollY = window.scrollY;
+
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [mobileMenuOpen]);
+
+  // ============ CLOSE ON ROUTE CHANGE ============
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+      setMobileMenuOpen(false);
     }
+  };
+
+  const handleLinkClick = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -108,6 +140,7 @@ export default function NavbarClient({ items }: Props) {
 
       {/* ================= MOBILE ================= */}
       <div className="lg:hidden">
+        {/* Mobile Top Row */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -184,6 +217,7 @@ export default function NavbarClient({ items }: Props) {
           </Link>
         </div>
 
+        {/* Mobile Search Bar */}
         <form
           onSubmit={handleSearch}
           className="px-4 py-2 border-b border-gray-100"
@@ -219,6 +253,7 @@ export default function NavbarClient({ items }: Props) {
           </div>
         </form>
 
+        {/* Mobile Horizontal Scroll Categories */}
         <div className="overflow-x-auto no-scrollbar border-b border-gray-100">
           <ul className="flex items-center gap-5 px-4 py-3 text-[12px] font-bold uppercase whitespace-nowrap">
             {items.map((item) => (
@@ -234,24 +269,44 @@ export default function NavbarClient({ items }: Props) {
           </ul>
         </div>
 
+        {/* ================= MOBILE MENU DROPDOWN ================= */}
         {mobileMenuOpen && (
-          <div className="bg-white border-b border-gray-200">
-            <ul className="py-2">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={item.href}
-                    className={`block px-4 py-2.5 text-sm font-semibold uppercase hover:bg-gray-50 ${getMobileColorClass(
-                      item.color
-                    )}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 z-40"
+              style={{ top: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Menu Drawer */}
+            <div
+              className="fixed left-0 right-0 bg-white border-b border-gray-200 z-50 overflow-y-auto shadow-lg"
+              style={{
+                top: "56px", // Adjust based on your header height
+                maxHeight: "calc(100vh - 56px)",
+                overscrollBehavior: "contain",
+                WebkitOverflowScrolling: "touch",
+              }}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              <ul className="py-2">
+                {items.map((item) => (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      className={`block px-4 py-3 text-sm font-semibold uppercase hover:bg-gray-50 border-b border-gray-50 ${getMobileColorClass(
+                        item.color
+                      )}`}
+                      onClick={handleLinkClick}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
         )}
       </div>
     </nav>
