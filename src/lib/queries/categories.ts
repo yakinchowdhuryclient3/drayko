@@ -11,7 +11,6 @@ export type Category = {
   is_active: boolean;
 };
 
-// ⭐ For build time (generateStaticParams) — uses admin client
 export async function getCategoriesStatic(): Promise<Category[]> {
   const supabase = createAdminClient();
 
@@ -29,7 +28,6 @@ export async function getCategoriesStatic(): Promise<Category[]> {
   return data || [];
 }
 
-// ⭐ For runtime (server components) — uses server client
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
 

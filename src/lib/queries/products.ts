@@ -54,7 +54,7 @@ async function formatProduct(supabase: any, product: any): Promise<Product> {
         }
         return null;
       })
-      .filter((c): c is ColorItem => c !== null);
+      .filter((c: any): c is ColorItem => c !== null);
   }
 
   return {
@@ -124,7 +124,9 @@ export async function getProductsStatic(
     return [];
   }
 
-  return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
+  return Promise.all(
+    (data || []).map((p: any) => formatProduct(supabase, p))
+  );
 }
 
 // ⭐ RUNTIME version
@@ -154,7 +156,9 @@ export async function getProducts(limit?: number): Promise<Product[]> {
     return [];
   }
 
-  return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
+  return Promise.all(
+    (data || []).map((p: any) => formatProduct(supabase, p))
+  );
 }
 
 export async function getProductsByCategory(
@@ -196,7 +200,9 @@ export async function getProductsByCategory(
     return [];
   }
 
-  return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
+  return Promise.all(
+    (data || []).map((p: any) => formatProduct(supabase, p))
+  );
 }
 
 // ⭐ getProductById — uses admin client for build time compatibility
@@ -245,5 +251,7 @@ export async function getSaleProducts(): Promise<Product[]> {
     return [];
   }
 
-  return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
+  return Promise.all(
+    (data || []).map((p: any) => formatProduct(supabase, p))
+  );
 }
