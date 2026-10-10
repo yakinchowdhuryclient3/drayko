@@ -56,10 +56,9 @@ export default function NavbarClient({ items }: Props) {
   const { totalItems } = useCart();
   const router = useRouter();
 
-  // ============ BODY SCROLL LOCK ============
+  // Body scroll lock when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
-      // Lock body scroll
       const originalOverflow = document.body.style.overflow;
       const originalPosition = document.body.style.position;
       const scrollY = window.scrollY;
@@ -70,7 +69,6 @@ export default function NavbarClient({ items }: Props) {
       document.body.style.width = "100%";
 
       return () => {
-        // Restore body scroll
         document.body.style.overflow = originalOverflow;
         document.body.style.position = originalPosition;
         document.body.style.top = "";
@@ -79,11 +77,6 @@ export default function NavbarClient({ items }: Props) {
       };
     }
   }, [mobileMenuOpen]);
-
-  // ============ CLOSE ON ROUTE CHANGE ============
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +101,7 @@ export default function NavbarClient({ items }: Props) {
               <li key={item.id}>
                 <Link
                   href={item.href}
+                  prefetch={true}
                   className={`transition ${getColorClass(item.color)}`}
                 >
                   {item.label}
@@ -181,7 +175,7 @@ export default function NavbarClient({ items }: Props) {
             )}
           </button>
 
-          <Link href="/" className="flex items-center">
+          <Link href="/" prefetch={true} className="flex items-center">
             <img
               src="/logo.png"
               alt="Drayko"
@@ -191,6 +185,7 @@ export default function NavbarClient({ items }: Props) {
 
           <Link
             href="/cart"
+            prefetch={true}
             aria-label="Cart"
             className="relative hover:opacity-70 transition p-1"
           >
@@ -260,6 +255,7 @@ export default function NavbarClient({ items }: Props) {
               <li key={item.id}>
                 <Link
                   href={item.href}
+                  prefetch={true}
                   className={`transition ${getMobileColorClass(item.color)}`}
                 >
                   {item.label}
@@ -283,7 +279,7 @@ export default function NavbarClient({ items }: Props) {
             <div
               className="fixed left-0 right-0 bg-white border-b border-gray-200 z-50 overflow-y-auto shadow-lg"
               style={{
-                top: "56px", // Adjust based on your header height
+                top: "56px",
                 maxHeight: "calc(100vh - 56px)",
                 overscrollBehavior: "contain",
                 WebkitOverflowScrolling: "touch",
@@ -295,6 +291,7 @@ export default function NavbarClient({ items }: Props) {
                   <li key={item.id}>
                     <Link
                       href={item.href}
+                      prefetch={true}
                       className={`block px-4 py-3 text-sm font-semibold uppercase hover:bg-gray-50 border-b border-gray-50 ${getMobileColorClass(
                         item.color
                       )}`}

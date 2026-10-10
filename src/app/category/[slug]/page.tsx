@@ -5,7 +5,15 @@ import Footer from "@/components/layout/Footer";
 import CategoryClient from "./CategoryClient";
 import { getProductsByCategory } from "@/lib/queries/products";
 import { getCategories } from "@/lib/queries/categories";
-export const revalidate = 60;
+
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const categories = await getCategories();
+  return categories.map((category) => ({
+    slug: category.slug,
+  }));
+}
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -19,8 +27,7 @@ export default async function CategoryPage({ params }: Props) {
   ]);
 
   const category = categories.find((c) => c.slug === slug);
-  const title =
-    category?.name || slug.replace(/-/g, " ").toUpperCase();
+  const title = category?.name || slug.replace(/-/g, " ").toUpperCase();
 
   return (
     <main className="min-h-screen bg-white">

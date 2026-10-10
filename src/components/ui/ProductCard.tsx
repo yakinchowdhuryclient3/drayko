@@ -34,15 +34,17 @@ export default function ProductCard({ product }: Props) {
   const isSale = product.is_sale ?? product.isSale;
   const isNew = product.is_new ?? product.isNew;
 
-  // images could be string[] (queries) or from older sources
   const image =
     product.image ||
     (Array.isArray(product.images) ? product.images[0] : null) ||
-    "/placeholder.jpg";
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Crect fill='%23f3f4f6' width='300' height='400'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='14' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
   return (
-    <Link href={`/product/${product.id}`} className="group flex flex-col">
-      {/* Image Container */}
+    <Link
+      href={`/product/${product.id}`}
+      prefetch={true}
+      className="group flex flex-col"
+    >
       <div className="relative w-full aspect-[3/4] overflow-hidden bg-gray-100 border border-gray-200">
         {imgError ? (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 text-gray-400 text-xs font-semibold uppercase text-center p-2">
@@ -52,19 +54,19 @@ export default function ProductCard({ product }: Props) {
           <img
             src={image}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgError(true)}
           />
         )}
 
-        {/* Sale Badge */}
         {isSale && (
           <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
             Sale
           </span>
         )}
 
-        {/* New Badge */}
         {isNew && !isSale && (
           <span className="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
             New
@@ -72,7 +74,6 @@ export default function ProductCard({ product }: Props) {
         )}
       </div>
 
-      {/* Product Info */}
       <div className="mt-3 flex flex-col gap-1">
         <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug group-hover:text-gray-600 transition">
           {product.name}

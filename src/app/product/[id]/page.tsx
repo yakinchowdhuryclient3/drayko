@@ -1,5 +1,4 @@
 import Link from "next/link";
-export const revalidate = 60;
 import { notFound } from "next/navigation";
 import TopBar from "@/components/layout/TopBar";
 import Navbar from "@/components/layout/Navbar";
@@ -8,8 +7,18 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import {
   getProductById,
+  getProducts,
   getProductsByCategory,
 } from "@/lib/queries/products";
+
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const products = await getProducts();
+  return products.map((product) => ({
+    id: product.id,
+  }));
+}
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -74,7 +83,7 @@ export default async function ProductPage({ params }: Props) {
             <ProductGallery images={images} name={product.name} />
           </div>
           <div>
-                        <ProductInfo
+            <ProductInfo
               product={{
                 id: product.id,
                 name: product.name,
@@ -93,7 +102,6 @@ export default async function ProductPage({ params }: Props) {
                 reviews: product.reviews_count,
                 sizeGuideUrl: product.size_guide_url || null,
               }}
-          
             />
           </div>
         </div>
@@ -115,12 +123,15 @@ export default async function ProductPage({ params }: Props) {
                 <Link
                   key={p.id}
                   href={`/product/${p.id}`}
+                  prefetch={true}
                   className="group flex flex-col"
                 >
                   <div className="relative w-full aspect-[3/4] overflow-hidden bg-gray-100 border border-gray-200">
                     <img
                       src={p.image || "/placeholder.jpg"}
                       alt={p.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {p.is_sale && (
