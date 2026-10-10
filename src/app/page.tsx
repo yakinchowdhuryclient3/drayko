@@ -4,6 +4,7 @@ import HeroSlider from "@/components/home/HeroSlider";
 import CategoryProducts from "@/components/home/CategoryProducts";
 import Footer from "@/components/layout/Footer";
 import { getCategories } from "@/lib/queries/categories";
+export const revalidate = 120;
 
 export default async function Home() {
   const categories = await getCategories();

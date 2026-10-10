@@ -1,4 +1,5 @@
 import Link from "next/link";
+export const revalidate = 60;
 import { notFound } from "next/navigation";
 import TopBar from "@/components/layout/TopBar";
 import Navbar from "@/components/layout/Navbar";

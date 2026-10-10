@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import CategoryClient from "./CategoryClient";
 import { getProductsByCategory } from "@/lib/queries/products";
 import { getCategories } from "@/lib/queries/categories";
+export const revalidate = 60;
 
 type Props = {
   params: Promise<{ slug: string }>;
