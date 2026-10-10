@@ -69,20 +69,55 @@ async function formatProduct(supabase: any, product: any): Promise<Product> {
 }
 
 // ⭐ STATIC version — for build time (generateStaticParams)
-export async function getProductsStatic(): Promise<Product[]> {
+export async function getProductsStatic(
+  categorySlug?: string,
+  limit?: number
+): Promise<Product[]> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(
+  let query: any;
+
+  if (categorySlug) {
+    const { data: category } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", categorySlug)
+      .eq("is_active", true)
+      .single();
+
+    if (!category) return [];
+
+    query = supabase
+      .from("products")
+      .select(
+        `
+        *,
+        categories (slug, name),
+        product_images (image_url, sort_order)
       `
-      *,
-      categories (slug, name),
-      product_images (image_url, sort_order)
-    `
-    )
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+      )
+      .eq("category_id", category.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+  } else {
+    query = supabase
+      .from("products")
+      .select(
+        `
+        *,
+        categories (slug, name),
+        product_images (image_url, sort_order)
+      `
+      )
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+  }
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching products (static):", error);
@@ -92,7 +127,7 @@ export async function getProductsStatic(): Promise<Product[]> {
   return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
 }
 
-// ⭐ RUNTIME version — for server components
+// ⭐ RUNTIME version
 export async function getProducts(limit?: number): Promise<Product[]> {
   const supabase = await createClient();
 
@@ -164,8 +199,9 @@ export async function getProductsByCategory(
   return Promise.all((data || []).map((p) => formatProduct(supabase, p)));
 }
 
+// ⭐ getProductById — uses admin client for build time compatibility
 export async function getProductById(id: string): Promise<Product | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("products")

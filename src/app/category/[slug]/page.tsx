@@ -3,16 +3,12 @@ import TopBar from "@/components/layout/TopBar";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CategoryClient from "./CategoryClient";
-import { getProductsByCategory } from "@/lib/queries/products";
-import {
-  getCategories,
-  getCategoriesStatic,
-} from "@/lib/queries/categories";
+import { getProductsStatic } from "@/lib/queries/products";
+import { getCategoriesStatic } from "@/lib/queries/categories";
 
 export const revalidate = 300;
 
 export async function generateStaticParams() {
-  // Use admin client for build-time data fetch
   const categories = await getCategoriesStatic();
   return categories.map((category) => ({
     slug: category.slug,
@@ -25,9 +21,11 @@ type Props = {
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
+
+  // Use STATIC versions — no cookies, works at build time
   const [products, categories] = await Promise.all([
-    getProductsByCategory(slug),
-    getCategories(),
+    getProductsStatic(slug),
+    getCategoriesStatic(),
   ]);
 
   const category = categories.find((c) => c.slug === slug);

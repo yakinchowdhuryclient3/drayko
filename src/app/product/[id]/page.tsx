@@ -7,7 +7,6 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import {
   getProductById,
-  getProductsByCategory,
   getProductsStatic,
 } from "@/lib/queries/products";
 
@@ -34,7 +33,7 @@ export default async function ProductPage({ params }: Props) {
   }
 
   const relatedProducts = product.category_slug
-    ? await getProductsByCategory(product.category_slug)
+    ? await getProductsStatic(product.category_slug)
     : [];
 
   const related = relatedProducts
@@ -54,7 +53,11 @@ export default async function ProductPage({ params }: Props) {
       <div className="border-b border-gray-200 bg-gray-50">
         <div className="container-custom py-3">
           <nav className="flex items-center gap-2 text-[11px] md:text-xs uppercase tracking-wide text-gray-500">
-            <Link href="/" prefetch={true} className="hover:text-black transition">
+            <Link
+              href="/"
+              prefetch={true}
+              className="hover:text-black transition"
+            >
               Home
             </Link>
             <span>/</span>
