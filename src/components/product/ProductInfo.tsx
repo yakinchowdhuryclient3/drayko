@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
 type ColorItem = {
@@ -48,6 +49,7 @@ export default function ProductInfo({ product }: Props) {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const { addToCart } = useCart();
+  const router = useRouter();
 
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
@@ -56,6 +58,7 @@ export default function ProductInfo({ product }: Props) {
   const increaseQty = () => setQuantity((q) => Math.min(q + 1, 10));
   const decreaseQty = () => setQuantity((q) => Math.max(q - 1, 1));
 
+  // ============ ADD TO CART ============
   const handleAddToCart = () => {
     addToCart(
       {
@@ -71,6 +74,33 @@ export default function ProductInfo({ product }: Props) {
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  // ============ BUY NOW — Direct checkout, cart skip ============
+  const handleBuyNow = () => {
+    // Save as direct purchase item (not cart)
+    try {
+      const directBuyItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        size: selectedSize,
+        color: selectedColor,
+        quantity,
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "drayko-direct-buy",
+          JSON.stringify(directBuyItem)
+        );
+      }
+
+      router.push("/checkout?direct=true");
+    } catch (error) {
+      console.error("Buy Now error:", error);
+    }
   };
 
   return (
@@ -178,7 +208,7 @@ export default function ProductInfo({ product }: Props) {
           </div>
         </div>
 
-        {/* Color Selector — uses hex directly */}
+        {/* Color Selector */}
         <div className="mb-4 md:mb-5">
           <div className="mb-2">
             <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
@@ -259,6 +289,7 @@ export default function ProductInfo({ product }: Props) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          {/* Add to Cart */}
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
@@ -276,10 +307,27 @@ export default function ProductInfo({ product }: Props) {
               ? "✓ Added!"
               : "Add to Cart"}
           </button>
+
+          {/* Buy Now — Direct Checkout */}
           <button
+            onClick={handleBuyNow}
             disabled={product.stock === 0}
-            className="flex-1 h-12 bg-black text-white text-sm font-bold uppercase tracking-wider hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 h-12 bg-black text-white text-sm font-bold uppercase tracking-wider hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
             Buy Now
           </button>
         </div>

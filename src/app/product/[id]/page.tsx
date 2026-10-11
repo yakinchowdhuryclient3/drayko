@@ -13,7 +13,6 @@ import {
 export const revalidate = 300;
 
 export async function generateStaticParams() {
-  // Use admin client for build-time data fetch
   const products = await getProductsStatic();
   return products.map((product) => ({
     id: product.id,
@@ -50,37 +49,37 @@ export default async function ProductPage({ params }: Props) {
       <TopBar />
       <Navbar />
 
-      <div className="border-b border-gray-200 bg-gray-50">
-        <div className="container-custom py-3">
-          <nav className="flex items-center gap-2 text-[11px] md:text-xs uppercase tracking-wide text-gray-500">
-            <Link
-              href="/"
-              prefetch={true}
-              className="hover:text-black transition"
-            >
-              Home
-            </Link>
-            <span>/</span>
-            {product.category_slug && (
-              <>
-                <Link
-                  href={`/category/${product.category_slug}`}
-                  prefetch={true}
-                  className="hover:text-black transition"
-                >
-                  {product.category_name}
-                </Link>
-                <span>/</span>
-              </>
-            )}
-            <span className="text-black font-semibold truncate">
-              {product.name}
-            </span>
-          </nav>
-        </div>
+      {/* Breadcrumb — no borders, no background */}
+      <div className="container-custom pt-6 md:pt-8">
+        <nav className="flex items-center gap-2 text-[11px] md:text-xs uppercase tracking-wide text-gray-500">
+          <Link
+            href="/"
+            prefetch={true}
+            className="hover:text-black transition"
+          >
+            Home
+          </Link>
+          <span>/</span>
+          {product.category_slug && (
+            <>
+              <Link
+                href={`/category/${product.category_slug}`}
+                prefetch={true}
+                className="hover:text-black transition"
+              >
+                {product.category_name}
+              </Link>
+              <span>/</span>
+            </>
+          )}
+          <span className="text-black font-semibold truncate">
+            {product.name}
+          </span>
+        </nav>
       </div>
 
-      <div className="container-custom py-6 md:py-12">
+      {/* Main Content — same white background, no separators */}
+      <div className="container-custom py-6 md:py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
           <div>
             <ProductGallery images={images} name={product.name} />
@@ -110,8 +109,9 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Related Products — no top border */}
       {related.length > 0 && (
-        <section className="py-10 md:py-14 border-t border-gray-200">
+        <section className="py-10 md:py-14">
           <div className="container-custom">
             <div className="mb-6 md:mb-8">
               <h2 className="text-lg md:text-2xl font-bold uppercase tracking-wide">

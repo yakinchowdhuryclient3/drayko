@@ -1,47 +1,127 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import TopBarClientOnly from "@/components/layout/TopBarClientOnly";
 import NavbarClientOnly from "@/components/layout/NavbarClientOnly";
 import FooterClientOnly from "@/components/layout/FooterClientOnly";
 import ProductCard from "@/components/ui/ProductCard";
-import { products as staticProducts } from "@/data/products";
-import { categories } from "@/data/categories";
+import { createClient } from "@/lib/supabase/client";
+import type { Product } from "@/lib/queries/products";
+import type { Category } from "@/lib/queries/categories";
 
 type SortOption = "relevance" | "price-low" | "price-high" | "newest";
 
 function SearchContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
-  const [searchInput, setSearchInput] = useState(query);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
 
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const supabase = createClient();
+
+        const { data: productsData, error: productsError } = await supabase
+          .from("products")
+          .select(
+            `
+            *,
+            categories (slug, name),
+            product_images (image_url, sort_order)
+          `
+          )
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+
+        if (productsError) {
+          console.error("Products error:", productsError);
+        } else {
+          const formatted: Product[] = (productsData || []).map((p: any) => {
+            const images =
+              p.product_images
+                ?.sort((a: any, b: any) => a.sort_order - b.sort_order)
+                .map((img: any) => img.image_url) || [];
+
+            let colors: { name: string; hex: string }[] = [];
+            if (Array.isArray(p.colors)) {
+              colors = p.colors
+                .map((c: any) => {
+                  if (typeof c === "string") {
+                    return { name: c, hex: "#888888" };
+                  }
+                  if (
+                    c &&
+                    typeof c === "object" &&
+                    typeof c.name === "string" &&
+                    typeof c.hex === "string"
+                  ) {
+                    return { name: c.name, hex: c.hex };
+                  }
+                  return null;
+                })
+                .filter(
+                  (c: any): c is { name: string; hex: string } => c !== null
+                );
+            }
+
+            return {
+              ...p,
+              colors,
+              sizes: Array.isArray(p.sizes) ? p.sizes : [],
+              category_slug: p.categories?.slug,
+              category_name: p.categories?.name,
+              image: images[0] || "/placeholder.jpg",
+              images,
+            };
+          });
+
+          setAllProducts(formatted);
+        }
+
+        const { data: catData } = await supabase
+          .from("categories")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order");
+
+        setCategories((catData as Category[]) || []);
+      } catch (error) {
+        console.error("Fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Filter and sort
   const results = useMemo(() => {
-    let filtered = [...staticProducts];
+    let filtered = [...allProducts];
 
     if (query.trim()) {
       const q = query.toLowerCase().trim();
       filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          p.categorySlug.toLowerCase().includes(q) ||
+          (p.category_slug && p.category_slug.toLowerCase().includes(q)) ||
+          (p.category_name && p.category_name.toLowerCase().includes(q)) ||
           (p.description && p.description.toLowerCase().includes(q))
       );
     }
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.categorySlug === selectedCategory);
+      filtered = filtered.filter((p) => p.category_slug === selectedCategory);
     }
-
-    filtered = filtered.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
 
     switch (sortBy) {
       case "price-low":
@@ -52,34 +132,28 @@ function SearchContent() {
         break;
       case "newest":
         filtered.sort((a, b) => {
-          if (a.isNew && !b.isNew) return -1;
-          if (!a.isNew && b.isNew) return 1;
+          if (a.is_new && !b.is_new) return -1;
+          if (!a.is_new && b.is_new) return 1;
           return 0;
         });
         break;
     }
 
     return filtered;
-  }, [query, selectedCategory, sortBy, priceRange]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchInput.trim())}`);
-    }
-  };
+  }, [allProducts, query, selectedCategory, sortBy]);
 
   return (
     <main className="min-h-screen bg-white">
       <TopBarClientOnly />
       <NavbarClientOnly />
 
-      <div className="border-b border-gray-200 bg-gray-50">
-        <div className="container-custom py-6 md:py-10">
-          <h1 className="text-2xl md:text-4xl font-bold uppercase tracking-wide">
-            Search
+      {/* Header */}
+      <div className="border-b border-gray-200">
+        <div className="container-custom py-6 md:py-8">
+          <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wide">
+            Search Results
           </h1>
-          {query && (
+          {query && !loading && (
             <p className="text-xs md:text-sm text-gray-500 mt-2">
               {results.length} results for &quot;{query}&quot;
             </p>
@@ -87,45 +161,19 @@ function SearchContent() {
         </div>
       </div>
 
-      <div className="border-b border-gray-200">
-        <div className="container-custom py-4">
-          <form onSubmit={handleSearch} className="relative max-w-2xl">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search products..."
-              className="w-full h-11 pl-5 pr-12 rounded-full border border-gray-300 bg-white text-sm focus:outline-none focus:border-black transition"
-            />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-          </form>
-        </div>
-      </div>
-
+      {/* Main Content */}
       <div className="container-custom py-6 md:py-10">
-        {results.length > 0 || query ? (
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
+            <p className="text-sm text-gray-500 mt-4">Loading...</p>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
+            {/* Sidebar — Sort By all screens, Categories desktop only */}
             <aside className="lg:col-span-1">
               <div className="space-y-6 lg:sticky lg:top-24">
+                {/* Sort By — All screens */}
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 border-b border-gray-200">
                     Sort By
@@ -142,7 +190,8 @@ function SearchContent() {
                   </select>
                 </div>
 
-                <div>
+                {/* Categories — Desktop only */}
+                <div className="hidden lg:block">
                   <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 border-b border-gray-200">
                     Categories
                   </h3>
@@ -160,7 +209,7 @@ function SearchContent() {
                       </button>
                     </li>
                     {categories.map((cat) => (
-                      <li key={cat.slug}>
+                      <li key={cat.id}>
                         <button
                           onClick={() => setSelectedCategory(cat.slug)}
                           className={`transition text-left w-full ${
@@ -175,67 +224,10 @@ function SearchContent() {
                     ))}
                   </ul>
                 </div>
-
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 border-b border-gray-200">
-                    Price Range
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">
-                        Min: ৳{priceRange[0].toLocaleString()}
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10000"
-                        step="100"
-                        value={priceRange[0]}
-                        onChange={(e) =>
-                          setPriceRange([
-                            Math.min(
-                              Number(e.target.value),
-                              priceRange[1] - 100
-                            ),
-                            priceRange[1],
-                          ])
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">
-                        Max: ৳{priceRange[1].toLocaleString()}
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10000"
-                        step="100"
-                        value={priceRange[1]}
-                        onChange={(e) =>
-                          setPriceRange([
-                            priceRange[0],
-                            Math.max(
-                              Number(e.target.value),
-                              priceRange[0] + 100
-                            ),
-                          ])
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                    <button
-                      onClick={() => setPriceRange([0, 10000])}
-                      className="text-xs text-gray-500 hover:text-black underline"
-                    >
-                      Reset price
-                    </button>
-                  </div>
-                </div>
               </div>
             </aside>
 
+            {/* Results */}
             <div className="lg:col-span-3">
               {results.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5">
@@ -245,30 +237,38 @@ function SearchContent() {
                 </div>
               ) : (
                 <div className="text-center py-16 md:py-24">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-400"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </div>
                   <h2 className="text-lg md:text-xl font-bold mb-2">
                     No products found
                   </h2>
                   <p className="text-sm text-gray-500 mb-6">
-                    Try a different search term or adjust filters
+                    Try a different search term
                   </p>
+                  <Link
+                    href="/"
+                    className="inline-block bg-black text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition"
+                  >
+                    Back to Home
+                  </Link>
                 </div>
               )}
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-16 md:py-24">
-            <h2 className="text-lg md:text-xl font-bold mb-2">
-              Start Searching
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Type a product name to search
-            </p>
-            <Link
-              href="/"
-              className="inline-block bg-black text-white px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition"
-            >
-              Browse All Products
-            </Link>
           </div>
         )}
       </div>
@@ -283,7 +283,7 @@ export default function SearchPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          Loading...
+          <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
         </div>
       }
     >
